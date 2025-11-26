@@ -1,0 +1,452 @@
+import {
+  Client,
+  GatewayIntentBits,
+  Partials,
+  EmbedBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ActionRowBuilder,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+  StringSelectMenuBuilder,
+  SlashCommandBuilder,
+  PermissionFlagsBits
+} from "discord.js";
+
+import fs from "fs";
+
+const config = JSON.parse(fs.readFileSync("./config.json", "utf8"));
+const { token, guildId, channelId, websiteURL, adminSecret } = config;
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.DirectMessages
+  ],
+  partials: [Partials.Channel]
+});
+
+
+const SECTORS = {
+  police: { // شرطة
+    hireRoles: {
+      trainee: "1430989745005269154",
+      wkil_aref: "1430989743780266215"
+    },
+
+    courseRole: "1430989724570357801",
+
+    ranksToRemove: [
+      "1430989743780266215","1430989741347704933","1430989742442287225","1430989740311580812",
+      "1430989739292622908","1430989737862369331","1430989736616525975","1430989735303708693",
+      "1430989733957337259","1430989732656971888","1430989731579039784","1430989730597568592",
+      "1430989729259589752","1430989727775068170","1430989726663446658","1436611295721029794"
+    ],
+
+    rankRoles: {
+      جندي: "1430989741347704933",
+      جندي_أول: "1430989742442287225",
+      رقيب: "1430989740311580812",
+      رقيب_أول: "1430989739292622908",
+      وكيل_ظابط: "1430989737862369331",
+      وكيل_ظابط_أول: "1430989736616525975",
+      ملازم: "1430989735303708693",
+      ملازم_أول: "1430989733957337259",
+      نقيب: "1430989732656971888",
+      رائد: "1430989731579039784",
+      مقدم: "1430989730597568592",
+      عقيد: "1430989729259589752",
+      عميد: "1430989727775068170",
+      لواء: "1430989726663446658",
+      فريق: "1436611295721029794"
+    },
+
+    courses: {
+      "منتدب": "1430989725371728043",
+      "مرور": "1430989724570357801",
+      "جناح جوي": "1430989723404337272",
+      "فرقة النجدة": "1430989722284720320",
+      "قسم التجنيد": "1430989721193938995",
+      "الأعلام الأمني": "1430989720128585950",
+      "مكتب التحقيقات": "1430989718983671930",
+      "مسؤول مكتب التحقيقات": "1436614417499295795",
+      "شؤون أكاديمية الشرطة": "1430989717910061239",
+      "التنسيق و المتابعة": "1430989716379140228",
+      "الشؤون القانونية": "1430989715317850162",
+      "محقق الشؤون القانونية": "1430989714235854991",
+      "قاضي عسكري": "1430989713073770688",
+      "مسؤول التذاكر للشرطة": "1434867781861376090"
+    }
+  },
+  customs: { // جمارك
+    hireRoles: { trainee: "1430989846360625162", wkil_aref: "1430989845248872569" },
+    courseRole: "ROLE_ID",
+    ranksToRemove: ["1430989845248872569","1430989844124925982","1430989842917097572","1430989841620926516","1430989840505245776","1430989839284703383","1430989838194053120","1430989837099597875","1430989836000563320","1430989834788274336","1430989833714536529","1430989832586526730","1430989831420383262","1430989829658775662","1430989828677435452","1436611938498121728","1436611934001692803"],
+    rankRoles: { عسكري: "1430989844124925982", عسكري_أول: "1430989842917097572", رقيب: "1430989841620926516", رقيب_أول: "1430989840505245776", وكيل_ظابط: "1430989839284703383", وكيل_ظابط_أول: "1430989838194053120", ملازم: "1430989837099597875", ملازم_أول: "1430989836000563320", نقيب: "1430989834788274336", رائد: "1430989833714536529", مقدم: "1430989832586526730", عقيد: "1430989831420383262", عميد: "1430989829658775662", لواء: "1430989828677435452", فريق: "1436611938498121728", فريق_اول: "1436611934001692803"  },
+    courses: { "منتدب": "1430989827612082358", "جناح جوي": "1430989826051539004", "فرقة الدعم والأسناد": "1430989824591921212", "مكافحة الأرهاب": "1430989823254073496", "الإعلام الأمني": "1430989822125805861", "خفر سواحل": "1430989820347547649", "قسم التجنيد": "1430989819684851712", "شؤون أكاديمية الحرس": "1430989818459979846", "التنسيق و المتابعة": "1430989817252024351", "الشؤون القانونية": "1430989816023224421", "محقق الشؤون القانونية": "1430989814278131823", "قاضي عسكري": "1430989813389197463", "مسؤول التذاكر للجمارك": "1434867820583321610" }
+  },
+  garage: { // ميكانيكي
+    hireRoles: { trainee: "1430989808796303540", wkil_aref: "1430989807353331885" },
+    courseRole: "ROLE_ID",
+    ranksToRemove: ["1430989807353331885","1430989805990318101","1430989804706988133","1430989803410817044","1430989801842151525","1430989800680194109","1430989799510114444","1430989798478188626","1430989797316624384","1430989795848491108"],
+    rankRoles: { ميكانيكي_مستوي_1: "1430989805990318101", ميكانيكي_مستوي_2: "1430989804706988133", ميكانيكي_مستوي_3: "1430989803410817044", ميكانيكي_مستوي_4: "1430989801842151525", ميكانيكي_مستوي_5: "1430989800680194109" ,  ميكانيكي_مستوي_6: "1430989799510114444", ميكانيكي_مستوي_7: "1430989798478188626", ميكانيكي_مستوي_8: "1430989797316624384", ميكانيكي_مستوي_9: "1430989795848491108"},
+    courses: { "منتدب": "1430989794569097216", "تعديل و تزويد": "1430989793373847552", "مسؤول الفنين": "1430989792111497308", "تنظيم": "1430989790970380378", "تصنيع": "1430989789678669894", "قسم التوظيف": "1430989788609253397", "شؤون أكاديمية الكراج": "1430989787044774060", "مشرف عــام ": "1430989785484230787", " مسؤول الوشوم ": "1430989784008097952", "التنسيق والمتابعة": "1430989782548349028", "الشؤون القانونية": "1430989781092798736", "مسؤول تذاكر الميكانيكي": "1434867841844383804"}
+  },
+  fire: { // دفاع مدني
+    hireRoles: { trainee: "1430989775942451340", wkil_aref: "1430989774621114408" },
+    courseRole: "ROLE_ID",
+    ranksToRemove: ["1430989774621114408","1430989773409091584","1430989772297474059","1430989771043508304","1430989770003316906","1430989768707276931","1430989767901708358","1430989766865846453","1430989765783851049","1430989764252663979"],
+    rankRoles: { مسعف_مستوي_1: "1430989773409091584", مسعف_مستوي_2: "1430989772297474059", مسعف_مستوي_3: "1430989771043508304", مسعف_مستوي_4: "1430989770003316906", مسعف_مستوي_5: "1430989768707276931", مسعف_مستوي_6: "1430989767901708358", مسعف_مستوي_7: "1430989766865846453", مسعف_مستوي_8: "1430989765783851049", مسعف_مستوي_9: "1430989764252663979" },
+    courses: { "منتدب": "1430989762969206985", "مساعد الطيار": "1430989761656655922", "الجناح الجوي": "1430989760419205362", "طبيب معتمد": "1430989759144263790","الطب الشرعي": "1430989758141825116","قسم التوظيف": "1430989756992589994","شؤون أكاديمية الدفاع": "1430989755629305897","مشرف ميداني": "1430989754517946462","مشرف عــام": "1430989752810602738","التنسيق و المتابعة": "1430989751242064066","الشؤون القانونية": "1430989750122188800","مسؤول التذاكر الدفاع المدني": "1434867871586193429" }
+  }
+};
+
+const COINS_ADMIN_ROLES = [
+  "1430989606219944038", // استريتور
+  "1432462178484621413", // جمارك استريتور
+  "1433556024341565584", // كراج استريتور  
+  "1430989602214252756"  // دفاع استريتور
+];
+
+async function sendMainPanel() {
+  const channel = await client.channels.fetch(channelId);
+
+  const embed = new EmbedBuilder()
+    .setTitle("لوحة تحكم إدارة القطاعات الحكومية 🔐")
+    .setDescription(`
+- ** Control of Government Sectors  **
+
+> **للتحكم بل وظائف المعتمدة لكل قطاع**
+
+- ** Allowed Rules  **
+
+> ** نائب + قائد + مشرف كل قطاع **
+`)
+    .setFooter({ text: "@Classic • City" });
+
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId("sector_police").setLabel("إدارة الشرطة").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId("sector_customs").setLabel("إدارة الجمارك").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId("sector_garage").setLabel("كـراج الميكانيكي").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId("sector_fire").setLabel("الدفاع المدني").setStyle(ButtonStyle.Primary)
+  );
+
+  await channel.send({ embeds: [embed], components: [row] });
+}
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isButton()) return;
+  if (!interaction.customId.startsWith("sector_")) return;
+
+  const sectorKey = interaction.customId.replace("sector_", "");
+  const sectorName = {
+    police: "الشرطة",
+    customs: "الجمارك",
+    garage: "الكراج",
+    fire: "الدفاع المدني"
+  }[sectorKey];
+
+  const allowedRoles = {
+    police: [
+      "1430989712000291056",
+      "1430989710930743336",
+      "1436109670506037391"
+    ],
+    customs: [
+      "1430989812227244135",
+      "1430989811044581587",
+      "1436434546496110592"
+    ],
+    fire: [
+      "1430989749069549672",
+      "1430989747702071387",
+      "1436439948201951293"
+    ],
+    garage: [
+      "1430989779608141985",
+      "1430989778362564649",
+      "1436435005831122974"
+    ]
+  };
+
+  const member = interaction.member;
+
+  const hasRole = member.roles.cache.some(role => allowedRoles[sectorKey].includes(role.id));
+  if (!hasRole) {
+    return interaction.reply({
+      content: "❌ ليس لديك صلاحية لإدارة هذا القطاع.",
+      ephemeral: true
+    });
+  }
+
+  const modal = new ModalBuilder()
+    .setCustomId(`modal_${sectorKey}`)
+    .setTitle(`أدخل ID الشخص لإدارة ${sectorName}`);
+
+  const input = new TextInputBuilder()
+    .setCustomId("user_id")
+    .setLabel("ID الشخص")
+    .setStyle(TextInputStyle.Short);
+
+  modal.addComponents(new ActionRowBuilder().addComponents(input));
+
+  await interaction.showModal(modal);
+});
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isModalSubmit()) return;
+  if (!interaction.customId.startsWith("modal_")) return;
+
+  const sectorKey = interaction.customId.replace("modal_", "");
+  const userId = interaction.fields.getTextInputValue("user_id");
+
+  const embed = new EmbedBuilder()
+    .setTitle("إدارة الموظف")
+    .setDescription(`**ID:** ${userId}`)
+    .setFooter({ text: "@Classic" });
+
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(`hire_${sectorKey}_${userId}`).setLabel("توظيف").setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId(`fire_${sectorKey}_${userId}`).setLabel("فصل").setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId(`rank_${sectorKey}_${userId}`).setLabel("ترقية/تخفيض").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId(`course_${sectorKey}_${userId}`).setLabel("إعطاء/إزالة دورة").setStyle(ButtonStyle.Secondary)
+  );
+
+  await interaction.reply({ embeds: [embed], components: [row], flags: 64 });
+});
+
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isButton() || !interaction.customId.startsWith("hire_")) return;
+
+  const [_, sectorKey, userId] = interaction.customId.split("_");
+  const sector = SECTORS[sectorKey];
+
+  await interaction.deferReply({ flags: 64 });
+
+  const member = await interaction.guild.members.fetch(userId).catch(() => null);
+  if (!member) return interaction.editReply("❌ العضو غير موجود");
+
+  await member.roles.add(sector.hireRoles.trainee).catch(() => null);
+  await member.roles.add(sector.hireRoles.wkil_aref).catch(() => null);
+
+  return interaction.editReply("✅ تم توظيف العضو بنجاح");
+});
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isButton() || !interaction.customId.startsWith("fire_")) return;
+
+  const [_, sectorKey, userId] = interaction.customId.split("_");
+  const sector = SECTORS[sectorKey];
+
+  await interaction.deferReply({ flags: 64 });
+
+  const member = await interaction.guild.members.fetch(userId).catch(() => null);
+  if (!member) return interaction.editReply("❌ العضو غير موجود");
+
+  for (const roleId of sector.ranksToRemove) await member.roles.remove(roleId).catch(() => null);
+
+  await member.roles.remove(sector.hireRoles.trainee).catch(() => null);
+  await member.roles.remove(sector.hireRoles.wkil_aref).catch(() => null);
+
+  for (const roleId of Object.values(sector.courses)) await member.roles.remove(roleId).catch(() => null);
+
+  return interaction.editReply("🗑️ تم فصل العضو وحذف كل الرتب والدورات الخاصة بالقطاع");
+});
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isButton() || !interaction.customId.startsWith("course_")) return;
+
+  const [_, sectorKey, userId] = interaction.customId.split("_");
+  const sector = SECTORS[sectorKey];
+
+  const select = new StringSelectMenuBuilder()
+    .setCustomId(`courseSelect_${sectorKey}_${userId}`)
+    .setPlaceholder("اختر الدورة…");
+
+  Object.keys(sector.courses).forEach((key) => {
+    select.addOptions({ label: key, value: key });
+  });
+
+  select.addOptions({ label: "إعطاء جميع الدورات", value: "giveAll" });
+
+  return interaction.reply({
+    content: `اختر دورة لإدارتها للعضو **${userId}**`,
+    components: [new ActionRowBuilder().addComponents(select)],
+    flags: 64
+  });
+});
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isButton() || !interaction.customId.startsWith("rank_")) return;
+
+  const [_, sectorKey, userId] = interaction.customId.split("_");
+  const sector = SECTORS[sectorKey];
+
+  const select = new StringSelectMenuBuilder()
+    .setCustomId(`rankSelect_${sectorKey}_${userId}`)
+    .setPlaceholder("اختر الرتبة…");
+
+  Object.keys(sector.rankRoles).forEach((key) => {
+    select.addOptions({ label: key, value: key });
+  });
+
+  return interaction.reply({
+    content: `اختر رتبة جديدة للعضو **${userId}**`,
+    components: [new ActionRowBuilder().addComponents(select)],
+    flags: 64
+  });
+});
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isStringSelectMenu() || !interaction.customId.startsWith("rankSelect_")) return;
+
+  const [_, sectorKey, userId] = interaction.customId.split("_");
+  const selectedKey = interaction.values[0];
+  const sector = SECTORS[sectorKey];
+  const roleId = sector.rankRoles[selectedKey];
+
+  await interaction.deferReply({ flags: 64 });
+
+  const member = await interaction.guild.members.fetch(userId).catch(() => null);
+  if (!member) return interaction.editReply("❌ العضو غير موجود");
+
+  for (const r of sector.ranksToRemove) await member.roles.remove(r).catch(() => null);
+
+  await member.roles.add(roleId).catch(() => null);
+
+  return interaction.editReply(`✅ تم تغيير رتبة العضو إلى **${selectedKey}** بنجاح`);
+});
+
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isStringSelectMenu() || !interaction.customId.startsWith("courseSelect_")) return;
+
+  const [_, sectorKey, userId] = interaction.customId.split("_");
+  const selectedKey = interaction.values[0];
+  const sector = SECTORS[sectorKey];
+
+  await interaction.deferReply({ flags: 64 });
+
+  const member = await interaction.guild.members.fetch(userId).catch(() => null);
+  if (!member) return interaction.editReply("❌ العضو غير موجود");
+
+  if (selectedKey === "giveAll") {
+    for (const r of Object.values(sector.courses)) {
+      if (!member.roles.cache.has(r)) await member.roles.add(r).catch(() => null);
+    }
+    return interaction.editReply("🟢 تم إعطاء جميع الدورات الخاصة بالقطاع");
+  }
+
+  const roleId = sector.courses[selectedKey];
+  if (!roleId) return interaction.editReply("❌ الدورة غير موجودة");
+
+  if (member.roles.cache.has(roleId)) {
+    await member.roles.remove(roleId);
+    return interaction.editReply(`🟡 تم إزالة دورة: **${selectedKey}**`);
+  }
+
+  await member.roles.add(roleId);
+  return interaction.editReply(`🟢 تم إعطاء دورة: **${selectedKey}**`);
+});
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+  if (interaction.commandName !== "coins") return;
+
+  const hasRole = interaction.member.roles.cache.some(role => COINS_ADMIN_ROLES.includes(role.id));
+  if (!hasRole) {
+    return interaction.reply({
+      content: "لا تمتلك صلحيات كافية",
+      ephemeral: true
+    });
+  }
+
+  const targetUser = interaction.options.getUser("player");
+  const amount = interaction.options.getInteger("amount");
+
+  if (amount <= 0) {
+    return interaction.reply({
+      content: "المبلغ يجب أن يكون أكبر من 0",
+      ephemeral: true
+    });
+  }
+
+  await interaction.deferReply({ flags: 64 });
+
+try {
+  const response = await fetch(`${websiteURL}/api/admin/coins`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Admin-Secret": adminSecret
+    },
+    body: JSON.stringify({
+      discordId: targetUser.id,
+      amount: amount
+    })
+  });
+
+    if (!response.ok) {
+      const error = await response.json();
+      return interaction.editReply(`❌ خطأ: ${error.message || "فشل تحديث الكوينات"}`);
+    }
+
+    const data = await response.json();
+
+    const embed = new EmbedBuilder()
+      .setTitle("✅ تم تحديث الكوينات بنجاح")
+      .setColor("Green")
+      .addFields(
+        { name: "اللاعب", value: targetUser.username, inline: true },
+        { name: "المبلغ", value: `${amount} 💰`, inline: true },
+        { name: "الرصيد الجديد", value: `${data.newBalance} 💰`, inline: true }
+      )
+      .setThumbnail(targetUser.displayAvatarURL())
+      .setFooter({ text: `تم بواسطة ${interaction.user.username}` });
+
+    return interaction.editReply({ embeds: [embed] });
+  } catch (error) {
+    console.error("Error updating coins:", error);
+    return interaction.editReply(`❌ خطأ في الاتصال بالموقع: ${error.message}`);
+  }
+});
+
+client.on("clientReady", async () => {
+  console.log(`Logged in as ${client.user.tag} Nada Bot is Sucssfully Logged in ✅`);
+  
+  const guild = client.guilds.cache.get(guildId);
+  if (guild) {
+    try {
+      const coinsCommand = new SlashCommandBuilder()
+        .setName("coins")
+        .setDescription("إعطاء أو خصم كوينات من لاعب (استريتور+ فقط)")
+        .addUserOption(option =>
+          option
+            .setName("player")
+            .setDescription("اللاعب اللي تبي تعطيه كوينات")
+            .setRequired(true)
+        )
+        .addIntegerOption(option =>
+          option
+            .setName("amount")
+            .setDescription("عدد الكوينات (استخدم - للخصم)")
+            .setRequired(true)
+            .setMinValue(-999999)
+            .setMaxValue(999999)
+        );
+
+      await guild.commands.create(coinsCommand);
+      console.log("✅ تم تسجيل أمر /coins بنجاح");
+    } catch (error) {
+      console.error("Error registering coins command:", error);
+    }
+  }
+
+  await sendMainPanel();
+});
+
+client.login(token);
